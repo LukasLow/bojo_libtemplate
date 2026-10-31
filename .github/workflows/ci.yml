@@ -7,23 +7,48 @@ on:
   pull_request:
 
 jobs:
-  # bojo is not published yet, so this job verifies the repository shape only.
-  # Replace the placeholder step with the real commands once bojo is available:
-  #   bojo vendor && bojo build && bojo test
-  shape:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: __init__.mojo must exist at the root
-        run: test -f __init__.mojo
+      - name: repository shape
+        run: |
+          test -f __init__.mojo
+          grep -q '^schema = 1$' bojo.pkg.toml
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "${GITHUB_REF_NAME}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+          fi
 
-      - name: manifest must be schema 1
-        run: grep -q '^schema = 1$' bojo.pkg.toml
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
 
-      - name: a release must be tagged vX.Y.Z
-        if: startsWith(github.ref, 'refs/tags/')
-        run: echo "${GITHUB_REF_NAME}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+      # bojo installs the Mojo toolchain pinned in [version] on first use.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: placeholder
-        run: echo "bojo is not published yet; run bojo vendor, build and test here"
+      - name: install bojo
+        run: go install github.com/LukasLow/bojo/cmd/bojo@latest
+
+      # A library has no bojo.toml of its own, so the job builds a throwaway
+      # consumer that depends on this repository. That compiles the real
+      # package, its `__init__.mojo` and everything it imports.
+      - name: build a consumer
+        run: |
+          mod="gh.${GITHUB_REPOSITORY_OWNER}.$(echo "${GITHUB_REPOSITORY#*/}" | tr '-' '_')"
+          mkdir -p .bojo/ci
+          cat > .bojo/ci/bojo.toml <<TOML
+          schema = 1
+          [project]
+          name    = "ci"
+          version = "0.0.0"
+          entry   = "main.mojo"
+          [version]
+          mojo = "1.1.0"
+          [deps.local_lib]
+          path = "../.."
+          TOML
+          printf 'import %s\n\ndef main():\n    pass\n' "$mod" > .bojo/ci/main.mojo
+          cd .bojo/ci && bojo vendor && bojo build
