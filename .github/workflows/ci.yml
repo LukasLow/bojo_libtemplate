@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  # bojo is not published yet, so this job verifies the repository shape only.
+  # Replace the placeholder step with the real commands once bojo is available:
+  #   bojo vendor && bojo build && bojo test
+  shape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: __init__.mojo must exist at the root
+        run: test -f __init__.mojo
+
+      - name: manifest must be schema 1
+        run: grep -q '^schema = 1$' bojo.pkg.toml
+
+      - name: a release must be tagged vX.Y.Z
+        if: startsWith(github.ref, 'refs/tags/')
+        run: echo "${GITHUB_REF_NAME}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+
+      - name: placeholder
+        run: echo "bojo is not published yet; run bojo vendor, build and test here"

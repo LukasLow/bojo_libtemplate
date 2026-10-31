@@ -1,0 +1,34 @@
+schema = 1
+
+[repo]
+url     = "https://github.com/LukasLow/bojo_libtemplate"
+license = "Apache-2.0"
+
+[pkg]
+description = "One sentence about what this library does."
+keywords    = ["mojo"]
+readme      = "README.md"
+docs        = "docs"
+# Redundant on purpose: `.gitattributes` already hides these from a git archive,
+# and `exclude` works even when the source is a plain directory.
+exclude = ["_tests/**", "docs/**", ".github/**", "AGENTS.md"]
+
+# The command is run, never imported: it has no module path and cannot collide
+# with anything (D83). Delete this section and `cmd/` if the repository ships no
+# command. `entry` defaults to cmd/main.mojo.
+[cmd]
+
+# Every dependency is a repository. The value is the version, not a package
+# name: one repository is one package.
+#
+# [pkg.deps-from."https://github.com/LukasLow/bojo_demo_socket"]
+# version = "v0.1.0"
+
+# Native code, if this library needs any. `ffi` ships as source; the consumer
+# decides how it is compiled (a project-level hook), never this repository.
+#
+# [pkg.linker]
+# libs    = ["example"]
+# libdirs = [".bojo/native"]
+# ffi     = ["example.c"]
+# runtime = ["data.txt"]

@@ -1,0 +1,6 @@
+# A git archive is what a consumer receives (D73): tests, docs, CI and agent
+# rules stay in the repository.
+_tests      export-ignore
+docs        export-ignore
+.github     export-ignore
+AGENTS.md   export-ignore
